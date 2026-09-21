@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MELTDREAM ✦ 亢奋 · 液体 · 梦境</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* ── 顶部玻璃胶囊工具栏（P4 风格） ── */
+  #bar {
+    position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 10;
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 22px; border-radius: 24px; user-select: none;
+    background: linear-gradient(160deg, rgba(120,90,220,0.30), rgba(60,40,140,0.42));
+    border: 1px solid rgba(200,170,255,0.45);
+    box-shadow: 0 0 24px rgba(150,100,255,0.25), inset 0 0 18px rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font: 12px/1.4 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #f2ecff; white-space: nowrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding-right: 16px; border-right: 1px solid rgba(255,255,255,0.22); }
+  .brand .logo { font-size: 20px; color: #d9c4ff; text-shadow: 0 0 12px rgba(190,140,255,0.9); }
+  .brand .name { font-size: 19px; font-weight: 700; letter-spacing: 3px; font-family: Georgia, "Times New Roman", serif; }
+  .brand .sub { font-size: 9px; letter-spacing: 2.5px; color: #cdb9f5; margin-top: 2px; }
+
+  .pill {
+    display: flex; align-items: center; gap: 7px;
+    font: 13px/1 -apple-system, "PingFang SC", sans-serif; color: #f4efff;
+    background: linear-gradient(160deg, rgba(150,110,255,0.35), rgba(90,60,190,0.30));
+    border: 1px solid rgba(205,175,255,0.55); border-radius: 999px;
+    padding: 10px 18px; cursor: pointer;
+    box-shadow: inset 0 0 10px rgba(255,255,255,0.10), 0 2px 8px rgba(60,20,140,0.35);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .pill:hover { transform: translateY(-1px); box-shadow: inset 0 0 12px rgba(255,255,255,0.16), 0 4px 14px rgba(120,70,255,0.5); }
+  .pill.on { box-shadow: inset 0 0 14px rgba(255,255,255,0.22), 0 0 16px rgba(170,110,255,0.65); }
+  .pill .ico { font-size: 13px; }
+  .pill .car { font-size: 10px; opacity: .8; }
+
+  #fps { font-variant-numeric: tabular-nums; color: #e8ddff; font-size: 12px; min-width: 46px; text-align: center; }
+  #phase { font-variant-numeric: tabular-nums; color: #ffd9f2; font-size: 12px; min-width: 56px; text-align: center; }
+
+  /* ── 抽屉面板 ── */
+  #panel {
+    position: absolute; top: 86px; left: 50%; transform: translateX(-50%); z-index: 9;
+    width: min(560px, 92vw); border-radius: 20px; padding: 16px 22px 14px;
+    background: linear-gradient(160deg, rgba(100,70,200,0.34), rgba(50,32,120,0.46));
+    border: 1px solid rgba(200,170,255,0.42);
+    box-shadow: 0 8px 30px rgba(40,10,110,0.5), inset 0 0 20px rgba(255,255,255,0.05);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    color: #f2ecff; transition: opacity .25s ease, transform .25s ease;
+  }
+  #panel.hidden { opacity: 0; transform: translateX(-50%) translateY(-12px); pointer-events: none; }
+  .grp { margin-bottom: 10px; }
+  .grp h3 { font-size: 11px; margin: 6px 0 6px; color: #d9c4ff; letter-spacing: 2px; font-weight: 600; }
+  .sl { display: grid; grid-template-columns: 76px 1fr 46px; gap: 8px; align-items: center; margin: 4px 0; }
+  .sl label { font-size: 11px; color: #e9e0ff; }
+  .sl input[type=range] { width: 100%; accent-color: #c9a6ff; height: 14px; margin: 0; }
+  .sl .val { color: #d9c4ff; text-align: right; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .hint { color: #cbbcf0; font-size: 10.5px; margin-top: 8px; }
+  kbd { font: 10px/1 ui-monospace, monospace; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 4px; padding: 1px 5px; }
+  .credit { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.14); color: #bfaeee; font-size: 10px; }
+  .credit a { color: #c9a6ff; text-decoration: none; }
+  #btn-default { margin-top: 6px; font-size: 11px; padding: 5px 12px; }
+
+  /* ── 水钻贴纸层（点击生成，随流体卷走） ── */
+  #stickers { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+  .sticker {
+    position: absolute; left: 0; top: 0;
+    will-change: transform, opacity; pointer-events: none;
+    filter: drop-shadow(0 0 4px rgba(180,130,255,0.45)) brightness(0.82) saturate(0.92);
+  }
+
+  #err {
+    display: none; position: absolute; top: 90px; left: 50%; transform: translateX(-50%); z-index: 20;
+    max-width: 76%; white-space: pre-wrap; font: 12px/1.5 ui-monospace, monospace;
+    color: #ffb4b4; background: rgba(40,8,8,.92); border: 1px solid #a33;
+    border-radius: 8px; padding: 12px 16px;
+  }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="stickers"></div>
+
+<div id="bar">
+  <div class="brand">
+    <span class="logo">✦</span>
+    <div>
+      <div class="name">MELTDREAM</div>
+      <div class="sub">亢奋 ✦ 液体 ✦ 梦境</div>
+    </div>
+  </div>
+  <button class="pill" id="pp-flow"><span class="ico">∿</span>流动强度<span class="car">▾</span></button>
+  <button class="pill" id="pp-speed"><span class="ico">◎</span>流动速度<span class="car">▾</span></button>
+  <button class="pill" id="pp-spark"><span class="ico">✦</span>闪粉与质感<span class="car">▾</span></button>
+  <button class="pill" id="btn-sound"><span class="ico">♪</span><span id="sound-txt">声音：开</span></button>
+  <span id="phase">阶段 · 平静</span>
+  <span id="fps">60 fps</span>
+  <button class="pill" id="btn-reset"><span class="ico">⟲</span>重新泼洒</button>
+  <button class="pill" id="pp-set"><span class="ico">⚙</span>全部参数</button>
+</div>
+
+<div id="panel" class="hidden">
+  <div class="grp" id="grp-flow">
+    <h3>流 动</h3>
+    <div class="sl"><label>流动强度</label><input type="range" id="s-flow" min="0" max="4" step="0.05" value="1"><span class="val" id="v-flow"></span></div>
+    <div class="sl"><label>平静时长</label><input type="range" id="s-wake" min="0" max="10" step="0.5" value="3"><span class="val" id="v-wake"></span></div>
+    <div class="sl"><label>循环周期</label><input type="range" id="s-cycle" min="20" max="120" step="1" value="35"><span class="val" id="v-cycle"></span></div>
+  </div>
+  <div class="grp" id="grp-speed">
+    <h3>速 度</h3>
+    <div class="sl"><label>流动速度</label><input type="range" id="s-speed" min="0.5" max="2" step="0.05" value="1"><span class="val" id="v-speed"></span></div>
+  </div>
+  <div class="grp" id="grp-spark">
+    <h3>闪 粉 与 质 感</h3>
+    <div class="sl"><label>闪粉含量</label><input type="range" id="s-glitter" min="0" max="1.5" step="0.05" value="0.6"><span class="val" id="v-glitter"></span></div>
+    <div class="sl"><label>霓虹辉光</label><input type="range" id="s-glow" min="0" max="2" step="0.05" value="0.7"><span class="val" id="v-glow"></span></div>
+    <div class="sl"><label>换皮色相</label><input type="range" id="s-hue" min="-3.14" max="3.14" step="0.02" value="0.15"><span class="val" id="v-hue"></span></div>
+  </div>
+  <div class="grp" id="grp-set">
+    <h3>全 部 参 数</h3>
+    <div class="sl"><label>浮雕强度</label><input type="range" id="s-relief" min="80" max="400" step="5" value="150"><span class="val" id="v-relief"></span></div>
+    <div class="sl"><label>高光光泽</label><input type="range" id="s-gloss" min="0" max="2" step="0.05" value="1"><span class="val" id="v-gloss"></span></div>
+    <button id="btn-default">恢复默认参数</button>
+  </div>
+  <div class="hint">点击画面 → 随机水钻贴纸｜♪ 开启声音 → 呼吸与阶段音频｜流动完全自动：平静 → 爆发 → 高速亢奋 → 恢复（循环）｜移动鼠标 = 局部发光｜按住 <kbd>I</kbd> 恢复底图｜<kbd>R</kbd> 重新泼洒｜<kbd>空格</kbd> 暂停</div>
+  <div class="credit">底图：Dreamscape.jpg（作者提供）｜Shader：<a href="https://www.shadertoy.com/view/MsGSRd" target="_blank">Spilled (MsGSRd)</a> · 灵感与核心算法来自 <a href="https://www.shadertoy.com/user/flockaroo" target="_blank">flockaroo</a> (2016) · CC BY-NC-SA 3.0</div>
+</div>
+
+<pre id="err"></pre>
+<script src="assets/noise.data.js?v=7"></script>
+<script src="assets/dream.data.js?v=7"></script>
+<script src="shaders/bufferA.js?v=7"></script>
+<script src="shaders/image.js?v=7"></script>
+<script src="main.js?v=7"></script>
+</body>
+</html>
